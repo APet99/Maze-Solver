@@ -1,20 +1,30 @@
 package misc.graphs;
 
+import datastructures.concrete.ArrayDisjointSet;
+import datastructures.concrete.ChainedHashSet;
 import datastructures.concrete.DoubleLinkedList;
+import datastructures.concrete.dictionaries.ChainedHashDictionary;
+import datastructures.interfaces.IDictionary;
 import datastructures.interfaces.IList;
 import datastructures.interfaces.ISet;
+import misc.Searcher;
 import misc.exceptions.NoPathExistsException;
 import misc.exceptions.NotYetImplementedException;
 
 /**
  * Represents an undirected, weighted graph, possibly containing self-loops, parallel edges,
  * and unconnected components.
- *
+ * <p>
  * Note: This class is not meant to be a full-featured way of representing a graph.
  * We stick with supporting just a few, core set of operations needed for the
  * remainder of the project.
  */
 public class Graph<V, E extends Edge<V> & Comparable<E>> {
+    //IDictionary<V, ISet<E>> adj;
+    IList<E> sortedEdges;
+    ArrayDisjointSet forest;
+    int numVert;
+    //    int numEdges;
     // NOTE 1:
     //
     // Feel free to add as many fields, private helper methods, and private
@@ -55,12 +65,20 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
     /**
      * Constructs a new graph based on the given vertices and edges.
      *
-     * @throws IllegalArgumentException  if any of the edges have a negative weight
-     * @throws IllegalArgumentException  if one of the edges connects to a vertex not
-     *                                   present in the 'vertices' list
+     * @throws IllegalArgumentException if any of the edges have a negative weight
+     * @throws IllegalArgumentException if one of the edges connects to a vertex not
+     *                                  present in the 'vertices' list
      */
     public Graph(IList<V> vertices, IList<E> edges) {
-        // TODO: Your code here
+        sortedEdges = Searcher.topKSort(edges.size(), edges);
+        if (sortedEdges.get(0).getWeight() < 0) {
+            throw new IllegalArgumentException("ERROR: Can not have a negative weight.");
+        }
+        forest = new ArrayDisjointSet(sortedEdges.size());
+        for (V v : vertices) {
+            forest.makeSet(v);
+        }
+        numVert = vertices.size();
     }
 
     /**
@@ -87,41 +105,66 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      * Returns the number of vertices contained within this graph.
      */
     public int numVertices() {
-        throw new NotYetImplementedException();
+        return numVert;
     }
 
     /**
      * Returns the number of edges contained within this graph.
      */
     public int numEdges() {
-        throw new NotYetImplementedException();
+        return sortedEdges.size();
     }
 
     /**
      * Returns the set of all edges that make up the minimum spanning tree of
      * this graph.
-     *
+     * <p>
      * If there exists multiple valid MSTs, return any one of them.
-     *
+     * <p>
      * Precondition: the graph does not contain any unconnected components.
      */
     public ISet<E> findMinimumSpanningTree() {
-        throw new NotYetImplementedException();
+        ISet<E> mst = new ChainedHashSet<>();
+        for (E e : sortedEdges) {
+            if (forest.findSet(e.getVertex1()) != forest.findSet(e.getVertex2())) {
+                mst.add(e);
+                forest.union(e.getVertex1(), e.getVertex2());
+            }
+        }
+        return mst;
     }
 
     /**
      * Returns the edges that make up the shortest path from the start
      * to the end.
-     *
+     * <p>
      * The first edge in the output list should be the edge leading out
      * of the starting node; the last edge in the output list should be
      * the edge connecting to the end node.
-     *
+     * <p>
      * Return an empty list if the start and end vertices are the same.
      *
-     * @throws NoPathExistsException  if there does not exist a path from the start to the end
+     * @throws NoPathExistsException if there does not exist a path from the start to the end
      */
     public IList<E> findShortestPathBetween(V start, V end) {
         throw new NotYetImplementedException();
     }
 }
+
+//  numEdges = 0;
+//          adj = new ChainedHashDictionary<>();
+//        for (V v : vertices) {
+//        adj.put(v, new ChainedHashSet<>());
+//        }
+//        for (E e : edges) {
+//        V vertex1 = e.getVertex1();
+//        V vertex2 = e.getVertex2();
+//        if (e.getWeight() < 0) {
+//        throw new IllegalArgumentException("ERROR: The weight can not be negative");
+//        } else if (!adj.containsKey(vertex1) || !adj.containsKey(vertex2)) {
+//        throw new IllegalArgumentException("ERROR: The vertex is not contained");
+//        }
+//        adj.get(vertex1).add(e);
+//        adj.get(vertex2).add(e);
+//        numEdges++;     //can set to edges.size()
+//        }
