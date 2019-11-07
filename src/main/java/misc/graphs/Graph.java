@@ -1,15 +1,13 @@
 package misc.graphs;
 
-import datastructures.concrete.ArrayDisjointSet;
-import datastructures.concrete.ChainedHashSet;
-import datastructures.concrete.DoubleLinkedList;
+import datastructures.concrete.*;
 import datastructures.concrete.dictionaries.ChainedHashDictionary;
 import datastructures.interfaces.IDictionary;
 import datastructures.interfaces.IList;
+import datastructures.interfaces.IPriorityQueue;
 import datastructures.interfaces.ISet;
 import misc.Searcher;
 import misc.exceptions.NoPathExistsException;
-import misc.exceptions.NotYetImplementedException;
 
 /**
  * Represents an undirected, weighted graph, possibly containing self-loops, parallel edges,
@@ -20,11 +18,9 @@ import misc.exceptions.NotYetImplementedException;
  * remainder of the project.
  */
 public class Graph<V, E extends Edge<V> & Comparable<E>> {
-    //IDictionary<V, ISet<E>> adj;
+    IDictionary<V, ISet<E>> adj;
     IList<E> sortedEdges;
     ArrayDisjointSet forest;
-    int numVert;
-    //    int numEdges;
     // NOTE 1:
     //
     // Feel free to add as many fields, private helper methods, and private
@@ -71,14 +67,25 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      */
     public Graph(IList<V> vertices, IList<E> edges) {
         sortedEdges = Searcher.topKSort(edges.size(), edges);
-        if (sortedEdges.get(0).getWeight() < 0) {
+        if (sortedEdges == null || sortedEdges.get(0).getWeight() < 0) {
             throw new IllegalArgumentException("ERROR: Can not have a negative weight.");
         }
         forest = new ArrayDisjointSet(sortedEdges.size());
+        adj = new ChainedHashDictionary<>();
+
         for (V v : vertices) {
+            adj.put(v, new ChainedHashSet<>());
             forest.makeSet(v);
         }
-        numVert = vertices.size();
+        for (E e : edges) {
+            V vertex1 = e.getVertex1();
+            V vertex2 = e.getVertex2();
+            if (!adj.containsKey(vertex1) || !adj.containsKey(vertex2)) {
+                throw new IllegalArgumentException("ERROR: The vertex is not contained");
+            }
+            adj.get(vertex1).add(e);
+            adj.get(vertex2).add(e);
+        }
     }
 
     /**
@@ -105,7 +112,7 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      * Returns the number of vertices contained within this graph.
      */
     public int numVertices() {
-        return numVert;
+        return adj.size();
     }
 
     /**
@@ -147,24 +154,83 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      * @throws NoPathExistsException if there does not exist a path from the start to the end
      */
     public IList<E> findShortestPathBetween(V start, V end) {
-        throw new NotYetImplementedException();
+        IDictionary<V, Double> weights = new ChainedHashDictionary<>();
+        IDictionary<V, IList<E>> paths = new ChainedHashDictionary<>();
+        IPriorityQueue<VertexInfo<V>> nextVertex = new ArrayHeap<>();
+
+        if (start.equals(end)){
+            return new DoubleLinkedList<>();
+        }
+        validateIndex(start);
+        validateIndex(end);
+        for (KVPair<V, ISet<E>> pair : adj) {
+            weights.put(pair.getKey(), Double.POSITIVE_INFINITY);
+        }
+        weights.put(start, 0.0);
+
+        //base case:
+        nextVertex.insert(new VertexInfo<V>(start, 0));
+        while (!nextVertex.isEmpty()) {
+            VertexInfo<V> info = nextVertex.removeMin();
+            if (weights.get(info.v) >= info.weight) {
+                for (E e : adj.get(info.v)) {
+                    V v1 = e.getVertex1();
+                    V v2 = e.getVertex2();
+
+                    if (weights.get(v1) > weights.get(v2) + e.getWeight()) {
+                        weights.put(v1, weights.get(v2) + e.getWeight());
+                        IList<E> newPath = paths.get(v1);
+                        newPath.add(e);
+                        paths.put(v2, newPath);
+                        nextVertex.insert(new VertexInfo<>(v2, e.getWeight()));
+                    }
+                }
+            }
+        }
+        if (!paths.containsKey(end)){
+            throw new NoPathExistsException("ERROR: The path does not exist.");
+        }
+        return paths.get(end);
+    }
+
+
+    private void validateIndex(V v) {
+        if (!adj.containsKey(v)) {
+            throw new IllegalArgumentException("ERROR: The vertex is not valid.");
+        }
+    }
+
+
+    private static class VertexInfo<V> implements Comparable<VertexInfo<V>> {
+        public V v;
+        public double weight;
+
+        public VertexInfo(V v, double weight) {
+            this.v = v;
+            this.weight = weight;
+        }
+
+        @Override
+        public int compareTo(VertexInfo o) {
+            double diff = weight - o.weight;
+            if (diff == 0) {
+                return 0;
+            }
+            return (diff > 0) ? 1 : -1;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj != null & getClass() == obj.getClass()) {
+                VertexInfo vInfo = (VertexInfo) obj;
+                return vInfo.v == this.v;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return v.hashCode();
+        }
     }
 }
-
-//  numEdges = 0;
-//          adj = new ChainedHashDictionary<>();
-//        for (V v : vertices) {
-//        adj.put(v, new ChainedHashSet<>());
-//        }
-//        for (E e : edges) {
-//        V vertex1 = e.getVertex1();
-//        V vertex2 = e.getVertex2();
-//        if (e.getWeight() < 0) {
-//        throw new IllegalArgumentException("ERROR: The weight can not be negative");
-//        } else if (!adj.containsKey(vertex1) || !adj.containsKey(vertex2)) {
-//        throw new IllegalArgumentException("ERROR: The vertex is not contained");
-//        }
-//        adj.get(vertex1).add(e);
-//        adj.get(vertex2).add(e);
-//        numEdges++;     //can set to edges.size()
-//        }
