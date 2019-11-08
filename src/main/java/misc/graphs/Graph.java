@@ -9,6 +9,7 @@ import datastructures.interfaces.ISet;
 import misc.Searcher;
 import misc.exceptions.NoPathExistsException;
 
+
 /**
  * Represents an undirected, weighted graph, possibly containing self-loops, parallel edges,
  * and unconnected components.
@@ -153,6 +154,7 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      *
      * @throws NoPathExistsException if there does not exist a path from the start to the end
      */
+    // FIXME: 11/7/2019 Clean up this section
     public IList<E> findShortestPathBetween(V start, V end) {
         IDictionary<V, Double> weights = new ChainedHashDictionary<>();
         IDictionary<V, IList<E>> paths = new ChainedHashDictionary<>();
@@ -167,6 +169,7 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
             weights.put(pair.getKey(), Double.POSITIVE_INFINITY);
         }
         weights.put(start, 0.0);
+        paths.put(start, new DoubleLinkedList<>());
 
         //base case:
         nextVertex.insert(new VertexInfo<V>(start, 0));
@@ -174,15 +177,18 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
             VertexInfo<V> info = nextVertex.removeMin();
             if (weights.get(info.v) >= info.weight) {
                 for (E e : adj.get(info.v)) {
-                    V v1 = e.getVertex1();
-                    V v2 = e.getVertex2();
+                    V v1 = info.v;
+                    V v2 = (info.v.equals(e.getVertex1())) ? e.getVertex2() : e.getVertex1();
 
-                    if (weights.get(v1) > weights.get(v2) + e.getWeight()) {
-                        weights.put(v1, weights.get(v2) + e.getWeight());
-                        IList<E> newPath = paths.get(v1);
+                    if (weights.get(v2) > weights.get(v1) + e.getWeight()) {
+                        weights.put(v2, weights.get(v1) + e.getWeight());
+                        IList<E> newPath = new DoubleLinkedList<>();
+                        for (E e2 : paths.get(v1)) {
+                            newPath.add(e2);
+                        }
                         newPath.add(e);
                         paths.put(v2, newPath);
-                        nextVertex.insert(new VertexInfo<>(v2, e.getWeight()));
+                        nextVertex.insert(new VertexInfo<>(v2, weights.get(v2)));
                     }
                 }
             }
