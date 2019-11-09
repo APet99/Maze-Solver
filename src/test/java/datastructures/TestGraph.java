@@ -1,6 +1,7 @@
 package datastructures;
 
 
+import datastructures.concrete.ChainedHashSet;
 import datastructures.concrete.DoubleLinkedList;
 import datastructures.interfaces.IList;
 import datastructures.interfaces.ISet;
@@ -339,5 +340,37 @@ public class TestGraph extends BaseTest {
         }catch (IllegalArgumentException e){
             //do nothing
         }
+    }
+
+    @Test(timeout=SECOND)
+    public void testWithSet() {
+        ISet<String> vertices = new ChainedHashSet<>();
+        vertices.add("a");
+        vertices.add("b");
+        vertices.add("c");
+        vertices.add("d");
+        vertices.add("e");
+        vertices.add("f");
+
+        ISet<SimpleEdge<String>> edges = new ChainedHashSet<>();
+        edges.add(edge("a", "b", 2));
+        edges.add(edge("a", "c", 5));
+        edges.add(edge("a", "d", 1));
+        edges.add(edge("a", "f", 9));
+
+        edges.add(edge("b", "c", 8));
+        edges.add(edge("b", "d", 4));
+        edges.add(edge("b", "e", 3));
+
+        edges.add(edge("d", "f", 6));
+
+        edges.add(edge("e", "f", 7));
+
+        Graph<String, SimpleEdge<String>> graph = new Graph<>(vertices, edges);
+
+        checkPathMatches(graph, 7, new String[] {"a", "d", "f"});
+        checkPathMatches(graph, 7, new String[] {"f", "d", "a"});
+        checkPathMatches(graph, 12, new String[] {"c", "a", "d", "f"});
+        checkPathMatches(graph, 12, new String[] {"f", "d", "a", "c"});
     }
 }
