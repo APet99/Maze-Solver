@@ -3,6 +3,7 @@ package datastructures;
 import datastructures.concrete.ArrayDisjointSet;
 import datastructures.interfaces.IDisjointSet;
 import misc.BaseTest;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -119,5 +120,86 @@ public class TestArrayDisjointSet extends BaseTest {
                 assertEquals(id, forest.findSet(j));
             }
         }
+    }
+
+    @Test(timeout = 250)
+    public void testUnionOfSameSetIsNull() {
+        String[] items = new String[]{"a", "b", "c", "d", "e"};
+        IDisjointSet<String> forest = this.createForest(items);
+
+        forest.union("a", "b"); //puts A and B in the same set
+
+        try {
+            forest.union("a", "b"); // Try to union two items of the same set
+        } catch (IllegalArgumentException e) {
+            //Do nothing. The case was caught.
+        }
+    }
+
+    @Test(timeout = 250)
+    public void testResize() {
+        int size = 100;
+        IDisjointSet<Integer> forest = new ArrayDisjointSet<>(size);
+
+        for (int i = 0; i < size; i++) {
+            forest.makeSet(i);
+        }
+        //forest should be full. Adding another element will require resizing.
+        try {
+            // This should pass if resizing occurs.
+            forest.makeSet(size);
+        } catch (Exception e) {
+            //Exception will be caught if resizing does not occur.
+            e.printStackTrace();
+        }
+    }
+
+    @Test(timeout = 250)
+    public void testUnionByRootKeep1() {
+        int size = 5;
+        IDisjointSet<Integer> forest = new ArrayDisjointSet<>(size);
+        for (int i = 0; i < size; i++) {
+            forest.makeSet(i);
+        }
+        int id = forest.findSet(0);
+
+        Assert.assertEquals(id, forest.findSet(0));
+        forest.union(1, 0);
+
+        id = forest.findSet(0);
+        assertEquals(id, forest.findSet(1));
+    }
+
+    @Test(timeout = 250)
+    public void testMakeSetNull() {
+        int size = 5;
+        IDisjointSet<Integer> forest = new ArrayDisjointSet<>(size);
+
+        forest.makeSet(1); //makes a set for the (1)
+
+        //attempts to make a set out of an already existed item.
+        try {
+            //We expect this to throw the exception
+            forest.makeSet(1);
+            fail("FAIL: The content was already added to a set!");
+        } catch (IllegalArgumentException e) {
+            //Do nothing
+        }
+    }
+
+    @Test(timeout = 250)
+    public void testUnionByRoot2ndPointerSmaller() {
+        int size = 10;
+        IDisjointSet<Integer> forest = new ArrayDisjointSet<>(size);
+
+        for (int i = 0; i < size; i++) {
+            forest.makeSet(i);
+        }
+
+        forest.union(0, 1);
+        forest.union(0, 3);
+        forest.union(4, 0);  //When root 1 is larger than root2
+
+        Assert.assertEquals(0, forest.findSet(4));
     }
 }
