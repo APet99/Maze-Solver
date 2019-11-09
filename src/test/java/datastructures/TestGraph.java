@@ -8,6 +8,7 @@ import misc.BaseTest;
 import misc.exceptions.NoPathExistsException;
 import misc.graphs.Edge;
 import misc.graphs.Graph;
+import org.junit.Assert;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -328,5 +329,15 @@ public class TestGraph extends BaseTest {
         }
     }
 
+    @Test(timeout = 250)
+    public void testValidateVertex(){
+        Graph g = buildSimpleGraph();
 
+        try {
+            g.findShortestPathBetween("a", "Z");
+            fail("FAIL: Invalid vertices! ");
+        }catch (IllegalArgumentException e){
+            //do nothing
+        }
+    }
 }
