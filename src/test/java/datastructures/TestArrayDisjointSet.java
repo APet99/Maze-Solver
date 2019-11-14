@@ -131,6 +131,7 @@ public class TestArrayDisjointSet extends BaseTest {
 
         try {
             forest.union("a", "b"); // Try to union two items of the same set
+            fail("Should have thrown illegalArgumentException");
         } catch (IllegalArgumentException e) {
             //Do nothing. The case was caught.
         }

@@ -12,8 +12,6 @@ public class ArrayDisjointSet<T> implements IDisjointSet<T> {
     private IDictionary<T, Integer> items;
     private int numElements;
 
-    //can add fields and helper methods
-
     public ArrayDisjointSet() {
         this(1024);
     }

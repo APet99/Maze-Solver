@@ -1,6 +1,8 @@
 package misc.graphs;
 
+//Robbie said this was okay on 11/14
 import datastructures.concrete.*;
+
 import datastructures.concrete.dictionaries.ChainedHashDictionary;
 import datastructures.interfaces.IDictionary;
 import datastructures.interfaces.IList;
@@ -19,9 +21,9 @@ import misc.exceptions.NoPathExistsException;
  * remainder of the project.
  */
 public class Graph<V, E extends Edge<V> & Comparable<E>> {
-    IDictionary<V, ISet<E>> adj;
-    IList<E> sortedEdges;
-    ArrayDisjointSet forest;
+    private IDictionary<V, ISet<E>> adj;
+    private IList<E> sortedEdges;
+    private ArrayDisjointSet<V> forest;
     // NOTE 1:
     //
     // Feel free to add as many fields, private helper methods, and private
@@ -71,7 +73,7 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
         if (sortedEdges == null || sortedEdges.get(0).getWeight() < 0) {
             throw new IllegalArgumentException("ERROR: Can not have a negative weight.");
         }
-        forest = new ArrayDisjointSet(sortedEdges.size());
+        forest = new ArrayDisjointSet<>(sortedEdges.size());
         adj = new ChainedHashDictionary<>();
 
         for (V v : vertices) {
@@ -154,64 +156,85 @@ public class Graph<V, E extends Edge<V> & Comparable<E>> {
      *
      * @throws NoPathExistsException if there does not exist a path from the start to the end
      */
-    // FIXME: 11/7/2019 Clean up this section
     public IList<E> findShortestPathBetween(V start, V end) {
         IDictionary<V, Double> weights = new ChainedHashDictionary<>();
         IDictionary<V, IList<E>> paths = new ChainedHashDictionary<>();
         IPriorityQueue<VertexInfo<V>> nextVertex = new ArrayHeap<>();
 
+        //Base case, shortest path, return a blank list
         if (start.equals(end)){
             return new DoubleLinkedList<>();
         }
+
+        //Otherwise, check to make sure the start/end exist
         validateIndex(start);
         validateIndex(end);
+
+        //Initialize the weights dictionary to contain infinity for all vertices
         for (KVPair<V, ISet<E>> pair : adj) {
             weights.put(pair.getKey(), Double.POSITIVE_INFINITY);
         }
+
+        //The start vertex should have a weight of 0,
         weights.put(start, 0.0);
         paths.put(start, new DoubleLinkedList<>());
-
-        //base case:
+        //Add the start into the queue
         nextVertex.insert(new VertexInfo<V>(start, 0));
-        while (!nextVertex.isEmpty()) {
-            VertexInfo<V> info = nextVertex.removeMin();
-            if (weights.get(info.v) >= info.weight) {
-                for (E e : adj.get(info.v)) {
-                    V v1 = info.v;
-                    V v2 = (info.v.equals(e.getVertex1())) ? e.getVertex2() : e.getVertex1();
 
-                    if (weights.get(v2) > weights.get(v1) + e.getWeight()) {
-                        weights.put(v2, weights.get(v1) + e.getWeight());
-                        IList<E> newPath = new DoubleLinkedList<>();
-                        for (E e2 : paths.get(v1)) {
-                            newPath.add(e2);
-                        }
-                        newPath.add(e);
-                        paths.put(v2, newPath);
-                        nextVertex.insert(new VertexInfo<>(v2, weights.get(v2)));
+        //While we have vertices to visit
+        while (!nextVertex.isEmpty()) {
+            //Get the next vertex
+            VertexInfo<V> info = nextVertex.removeMin();
+            for (E e : adj.get(info.v)) {
+                //Get the first vertex
+                V v1 = info.v;
+                //Get the other vertex that the path leads to
+                V v2 = (info.v.equals(e.getVertex1())) ? e.getVertex2() : e.getVertex1();
+
+                //If the new path is less than the previous one
+                if (weights.get(v2) > weights.get(v1) + e.getWeight()) {
+                    //Update the weight
+                    weights.put(v2, weights.get(v1) + e.getWeight());
+                    //Copy the path from the node that was used to visit this node
+                    IList<E> newPath = new DoubleLinkedList<>();
+                    for (E e2 : paths.get(v1)) {
+                        newPath.add(e2);
                     }
+                    //Add the new path
+                    newPath.add(e);
+                    //Put this list of paths into the dictionary
+                    paths.put(v2, newPath);
+                    nextVertex.insert(new VertexInfo<>(v2, weights.get(v2)));
                 }
             }
         }
+        //If a path doesn't exist, throw the exception
         if (!paths.containsKey(end)){
             throw new NoPathExistsException("ERROR: The path does not exist.");
         }
+        //Otherwise return the path
         return paths.get(end);
     }
 
-
+    /**
+     * Helper method that takes in a vertex and checks if it exists in the current graph
+     * @param v - the vertex to check\
+     *          Throws IllegalArgumentException if the vertex doesn't exist
+     */
     private void validateIndex(V v) {
         if (!adj.containsKey(v)) {
             throw new IllegalArgumentException("ERROR: The vertex is not valid.");
         }
     }
 
-
+    /**
+     * Private inner class that is used to create a comparable object that contains the important info of each vertex
+     */
     private static class VertexInfo<V> implements Comparable<VertexInfo<V>> {
         public V v;
-        public double weight;
+        double weight;
 
-        public VertexInfo(V v, double weight) {
+        VertexInfo(V v, double weight) {
             this.v = v;
             this.weight = weight;
         }
