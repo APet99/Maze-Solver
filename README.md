@@ -1,1 +1,1 @@
-# csc312-proj4-maze-starter
+# Maze Solver
